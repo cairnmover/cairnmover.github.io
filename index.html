@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>cairn · Leave it. Find it.</title>
+<meta name="description" content="The best messages aren't sent. They're found. Friends hide notes on real streets, trails and rivers, and you can only read them by going there. Coming soon to iPhone and Android.">
+<meta name="theme-color" content="#FFD400">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="cairn">
+<meta property="og:title" content="cairn · The best messages aren't sent. They're found.">
+<meta property="og:description" content="Friends hide notes on real streets, trails and rivers. You can only read them by going there. Coming soon to iPhone and Android.">
+<link rel="canonical" href="https://cairnmover.github.io/">
+<meta property="og:url" content="https://cairnmover.github.io/">
+<meta property="og:image" content="https://cairnmover.github.io/og-image.png">
+<meta name="twitter:image" content="https://cairnmover.github.io/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  html, body { margin: 0; }
+  img { max-width: 100%; }
+  /* Layout: scrolling down the page is walking a trail. A route bar fills at the top, locked notes
+     unlock as you pass them, and the page ends at a note left for you. Trail Blaze: ink, signal yellow, route blue. */
+  :root {
+    --paper: #FFFFFF;
+    --ink: #111111;
+    --muted: #57554D;
+    --wash: #F6F5F0;
+    --contour: #ECE9DF;
+    --signal: #FFD400;
+    --on-signal: #111111;
+    --route: #2340FF;
+    --frame: #111111;
+    --map-land: #F2F0E8;
+    --map-park: #D9EAC4;
+    --map-water: #BCD6F6;
+    --map-street: #FFFFFF;
+    --map-casing: #D6D1C3;
+    --map-trail: #7F9160;
+
+    --display: "Archivo Black", "Arial Black", "Helvetica Neue", Arial, sans-serif;
+    --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --ease: cubic-bezier(.2, .7, .2, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E1217; --ink: #F2F5F7; --muted: #9DA6AF; --wash: #141A21; --contour: #19212A;
+      --signal: #FFB547; --on-signal: #0E1217; --route: #C8F560; --frame: #000000;
+      --map-land: #151B22; --map-park: #1B2A21; --map-water: #133150; --map-street: #252E39;
+      --map-casing: #303B47; --map-trail: #6B8A5C;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0E1217; --ink: #F2F5F7; --muted: #9DA6AF; --wash: #141A21; --contour: #19212A;
+    --signal: #FFB547; --on-signal: #0E1217; --route: #C8F560; --frame: #000000;
+    --map-land: #151B22; --map-park: #1B2A21; --map-water: #133150; --map-street: #252E39;
+    --map-casing: #303B47; --map-trail: #6B8A5C;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 18px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--paper); }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  :focus-visible { outline: 3px solid var(--route); outline-offset: 3px; }
+
+  .wrap {
+    position: relative;
+    max-width: 1180px;
+    margin-inline: auto;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+  }
+
+  /* Route bar */
+  .trail { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); height: 5px; z-index: 31; pointer-events: none; }
+  .trail-fill { height: 100%; background: var(--route); transform-origin: left center; transform: scaleX(var(--progress, 0)); }
+  .trail-dot { position: absolute; top: -5px; width: 15px; height: 15px; border-radius: 50%; background: var(--paper); border: 4px solid var(--route); left: calc(var(--progress, 0) * (100% - 15px)); }
+
+  .blaze { display: inline-block; width: 10px; height: 18px; background: var(--ink); box-shadow: 3px 3px 0 var(--route); flex: none; }
+  .label { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-weight: 600; font-size: 12.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+  /* Header */
+  .top { border-bottom: 2px solid var(--ink); background: var(--paper); position: relative; z-index: 2; }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .blaze { width: 13px; height: 24px; }
+  .brand b { font-family: var(--display); font-weight: 400; font-size: 24px; }
+  .soon-chip { font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; border: 2px solid var(--ink); padding: 6px 10px; white-space: nowrap; }
+  .soon-chip i { display: inline-block; width: 8px; height: 8px; background: var(--signal); border: 1.5px solid var(--ink); margin-right: 8px; }
+
+  /* Hero */
+  .hero { position: relative; overflow: hidden; }
+  .contours { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .contours path { fill: none; stroke: var(--contour); stroke-width: 2; }
+  .hero .wrap {
+    display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: clamp(32px, 5vw, 64px); align-items: center;
+    padding-block: clamp(44px, 7vw, 92px) clamp(68px, 9vw, 116px);
+  }
+  .hero-copy { display: flex; flex-direction: column; gap: 26px; min-width: 0; }
+  .hero h1 { font-family: var(--display); font-weight: 400; text-transform: uppercase; font-size: clamp(46px, 6.6vw, 92px); line-height: 0.92; letter-spacing: -0.015em; }
+  .hero h1 .hl { display: inline-block; line-height: 0.92; margin-top: 0.08em; background: var(--signal); color: var(--on-signal); padding: 0.06em 0.1em 0; box-shadow: 6px 6px 0 var(--route); }
+  .lead { font-size: clamp(19px, 2vw, 22px); max-width: 34ch; font-weight: 500; }
+  .for { font-family: var(--mono); font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+  .rot-box { display: inline-block; overflow: hidden; height: 1.5em; vertical-align: bottom; }
+  .rot { display: inline-block; background: var(--ink); color: var(--paper); padding: 1px 10px; transition: transform 0.35s var(--ease), opacity 0.35s var(--ease); }
+  .rot.out { transform: translateY(-110%); opacity: 0; }
+  .rot.in { transform: translateY(110%); opacity: 0; transition: none; }
+  .platforms { display: flex; flex-wrap: wrap; gap: 12px; }
+  .platform { display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px; background: var(--ink); color: var(--paper); font-weight: 800; font-size: 16px; box-shadow: 5px 5px 0 var(--signal); }
+  .platform small { font-family: var(--mono); font-weight: 600; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+
+  .stage { position: relative; min-width: 0; padding-bottom: 36px; }
+  .map-card { border: 2px solid var(--ink); background: var(--map-land); box-shadow: 8px 8px 0 var(--route); }
+  .map-card svg { display: block; width: 100%; height: auto; }
+  .phone { position: absolute; right: -10px; bottom: 0; width: clamp(170px, 18vw, 214px); border: 9px solid var(--frame); border-radius: 30px; background: var(--signal); color: var(--on-signal); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22); overflow: hidden; }
+  .screen { display: flex; flex-direction: column; gap: 10px; padding: 14px 14px 16px; aspect-ratio: 9 / 16.5; }
+  .screen .bar { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; font-weight: 600; }
+  .screen .tag { align-self: flex-start; font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: 0.12em; border: 1.5px solid currentColor; padding: 2px 6px; margin-top: 6px; }
+  .screen .found { font-family: var(--display); font-size: clamp(22px, 2.4vw, 28px); line-height: 0.92; text-transform: uppercase; }
+  .screen .msg { font-weight: 700; font-size: clamp(12.5px, 1.2vw, 14px); line-height: 1.35; border-top: 2px solid currentColor; padding-top: 10px; }
+  .screen .who { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; margin-top: auto; }
+  .screen .av { width: 26px; height: 26px; display: grid; place-items: center; background: var(--on-signal); color: var(--signal); font-weight: 800; font-size: 11px; }
+  .screen .who em { font-style: normal; display: block; font-weight: 500; opacity: 0.75; }
+  .screen .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .screen .btns span { border: 2px solid currentColor; text-align: center; font-weight: 800; font-size: 11px; padding: 6px 0; }
+  .screen .btns span:first-child { background: var(--on-signal); color: var(--signal); border-color: var(--on-signal); }
+
+  /* Strips that slide as you scroll */
+  .strip { border-block: 2px solid var(--ink); overflow: hidden; }
+  .strip.dark { background: var(--ink); color: var(--paper); }
+  .strip-row { display: flex; gap: 28px; white-space: nowrap; padding-block: 16px; width: max-content; font-family: var(--display); font-size: clamp(22px, 3vw, 34px); text-transform: uppercase; }
+  .strip-row span { display: inline-flex; align-items: center; gap: 28px; }
+  .strip-row span::after { content: ""; width: 10px; height: 18px; background: var(--signal); }
+  .strip.dark .strip-row { transform: translateX(calc(var(--progress, 0) * -38%)); }
+
+  /* Sections */
+  section.block > .wrap { padding-block: clamp(68px, 9vw, 116px); display: flex; flex-direction: column; gap: clamp(32px, 4vw, 52px); }
+  section.block + section.block { border-top: 2px solid var(--ink); }
+  .sec-head { display: flex; flex-direction: column; gap: 14px; max-width: 780px; }
+  .sec-head p { color: var(--muted); font-size: 19px; max-width: 44ch; }
+  h2 { font-family: var(--display); font-weight: 400; font-size: clamp(38px, 5.4vw, 70px); line-height: 0.93; text-transform: uppercase; letter-spacing: -0.01em; }
+
+  /* The notes wall: each note is locked until you scroll past it */
+  .wall { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px 28px; padding: 6px 8px 8px 0; }
+  .note-card {
+    position: relative; border: 2px solid var(--ink); background: var(--paper); color: var(--ink);
+    padding: 22px 22px 20px; box-shadow: 6px 6px 0 var(--ink); transform: rotate(var(--r, 0deg));
+    display: flex; flex-direction: column; gap: 16px; min-width: 0;
+  }
+  .note-card.y { background: var(--signal); color: var(--on-signal); }
+  .note-card .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .note-card .head .pin { display: inline-flex; align-items: center; gap: 8px; }
+  .note-card .head .pin::before { content: ""; width: 7px; height: 13px; background: currentColor; }
+  .note-card .msg { font-weight: 800; font-size: clamp(20px, 1.9vw, 24px); line-height: 1.22; transition: filter 0.9s var(--ease), opacity 0.9s var(--ease); }
+  .note-card .from { margin-top: auto; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .note-card .from .av { width: 30px; height: 30px; display: grid; place-items: center; background: var(--ink); color: var(--paper); font-weight: 800; font-size: 12px; }
+  .note-card.y .from .av { background: var(--on-signal); color: var(--signal); }
+  .note-card .stamp {
+    position: absolute; right: 14px; bottom: 14px; transform: rotate(-10deg);
+    font-family: var(--display); font-size: 15px; letter-spacing: 0.06em; color: var(--route);
+    border: 3px solid var(--route); padding: 3px 8px 1px; transition: opacity 0.4s ease 0.5s, transform 0.4s var(--ease) 0.5s;
+  }
+  .note-card.y .stamp { color: var(--on-signal); border-color: var(--on-signal); }
+  .note-card .lock {
+    position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .note-card .lock span { background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 12px; }
+  .note-card.is-locked .msg { filter: blur(8px); opacity: 0.6; }
+  .note-card.is-locked .lock { opacity: 1; }
+  .note-card.is-locked .stamp { opacity: 0; transform: rotate(-10deg) scale(1.6); }
+
+  /* How it works */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .steps li { border: 2px solid var(--ink); padding: 26px 24px 30px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .steps .n { font-family: var(--display); font-size: clamp(44px, 5vw, 64px); line-height: 0.9; text-transform: uppercase; }
+  .steps .n em { font-style: normal; background: var(--signal); color: var(--on-signal); padding: 0 8px; }
+  .steps p { color: var(--muted); font-size: 18px; }
+
+  /* Modes */
+  .modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .mode { border: 2px solid var(--ink); display: flex; flex-direction: column; min-width: 0; }
+  .mode svg { display: block; width: 100%; height: auto; background: var(--map-land); border-bottom: 2px solid var(--ink); }
+  .mode .txt { padding: 22px 24px 28px; display: flex; flex-direction: column; gap: 10px; }
+  .mode .kind { align-self: flex-start; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border: 2px solid var(--ink); }
+  .mode.hint .kind { background: var(--signal); color: var(--on-signal); }
+  .mode h3 { font-family: var(--display); font-weight: 400; font-size: clamp(28px, 3vw, 38px); text-transform: uppercase; line-height: 1; }
+  .mode p { color: var(--muted); }
+
+  /* Who it's for */
+  .movers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 2px solid var(--ink); }
+  .mover { padding: 26px 22px 30px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .mover + .mover { border-left: 2px solid var(--ink); }
+  .mover .who { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .mover h3 { font-size: clamp(21px, 2vw, 25px); font-weight: 800; line-height: 1.2; }
+  .mover:nth-child(2) { background: var(--signal); color: var(--on-signal); }
+  .mover:nth-child(2) .who { color: var(--on-signal); }
+
+  /* One game, told big */
+  .ambush { background: var(--signal); color: var(--on-signal); border-block: 2px solid var(--ink); overflow: hidden; }
+  .ambush .wrap { padding-block: clamp(68px, 10vw, 128px); display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px 56px; align-items: end; }
+  .ambush .label { color: var(--on-signal); }
+  .ambush .label .blaze { background: var(--on-signal); }
+  .ambush h2 { font-size: clamp(48px, 8.5vw, 118px); line-height: 0.88; margin-top: 16px; }
+  .ambush p { font-size: clamp(19px, 2vw, 23px); font-weight: 500; max-width: 30ch; }
+
+  /* Slogans, two rows that slide in opposite directions */
+  .slogans { overflow: hidden; border-bottom: 2px solid var(--ink); padding-block: clamp(28px, 4vw, 48px); display: flex; flex-direction: column; gap: 6px; }
+  .slogans .row { display: flex; gap: 0.5em; width: max-content; white-space: nowrap; font-family: var(--display); font-size: clamp(44px, 8vw, 112px); line-height: 1; text-transform: uppercase; }
+  .slogans .row .o { color: transparent; -webkit-text-stroke: 2px var(--ink); }
+  .slogans .row.a { transform: translateX(calc(-10% + var(--progress, 0) * -24%)); }
+  .slogans .row.b { transform: translateX(calc(-40% + var(--progress, 0) * 24%)); }
+
+  /* Closing */
+  .closing { position: relative; overflow: hidden; }
+  .closing .wrap { padding-block: clamp(76px, 11vw, 140px); display: flex; flex-direction: column; gap: 28px; align-items: flex-start; }
+  .closing h2 { font-size: clamp(44px, 7.5vw, 100px); line-height: 0.9; max-width: 14ch; }
+  .closing .sub { font-size: clamp(19px, 2vw, 23px); font-weight: 500; }
+  .closing .facts { display: flex; flex-wrap: wrap; gap: 10px 28px; font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .closing .facts span { display: inline-flex; align-items: center; gap: 10px; }
+  .closing .facts span::before { content: ""; width: 8px; height: 8px; background: var(--route); }
+
+  footer { border-top: 2px solid var(--ink); }
+  footer .wrap { padding-block: 24px 32px; display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  footer .brand b { font-size: 18px; color: var(--ink); }
+  footer .brand .blaze { width: 9px; height: 16px; }
+
+  /* ---------- Motion ---------- */
+  .draw { stroke-dasharray: 1; stroke-dashoffset: 0; animation: draw 1.6s var(--ease) 0.2s both; }
+  @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  .phone { animation: arrive 0.7s var(--ease) 1.5s both; }
+  @keyframes arrive { from { transform: translateY(24px) rotate(3deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .note-ring { transform-box: fill-box; transform-origin: center; animation: ping 2.4s ease-out 1.8s infinite; }
+  @keyframes ping { 0% { transform: scale(1); opacity: 0.9; } 70%, 100% { transform: scale(1.9); opacity: 0; } }
+
+  [data-reveal] { transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); transition-delay: var(--d, 0ms); }
+  [data-reveal].is-waiting { opacity: 0; transform: translateY(40px); }
+  [data-reveal="left"].is-waiting { transform: translateX(-60px); }
+  .bars rect { transform-box: fill-box; transform-origin: bottom; }
+  .mode.is-shown .bars rect { animation: grow 0.7s var(--ease) both; }
+  .mode.is-shown .bars rect:nth-child(2) { animation-delay: 0.12s; }
+  .mode.is-shown .bars rect:nth-child(3) { animation-delay: 0.24s; }
+  .mode.is-shown .bars rect:nth-child(4) { animation-delay: 0.36s; }
+  .mode.is-shown .bars rect:nth-child(5) { animation-delay: 0.48s; }
+  @keyframes grow { from { transform: scaleY(0.1); } to { transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .draw, .phone, .note-ring, .mode.is-shown .bars rect { animation: none; }
+    .runner-anim { display: none; }
+    .strip.dark .strip-row, .slogans .row.a, .slogans .row.b { transform: none; }
+    [data-reveal], .note-card .msg, .note-card .stamp, .note-card .lock, .rot { transition: none; }
+  }
+
+  /* Narrow screens */
+  @media (max-width: 960px) {
+    .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .movers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mover + .mover { border-left: 0; }
+    .mover:nth-child(even) { border-left: 2px solid var(--ink); }
+    .mover:nth-child(n + 3) { border-top: 2px solid var(--ink); }
+  }
+  @media (max-width: 860px) {
+    .hero .wrap, .ambush .wrap { grid-template-columns: minmax(0, 1fr); }
+    .stage { margin-right: 6px; }
+    .phone { right: -4px; }
+    .steps, .modes { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 600px) {
+    body { font-size: 17px; }
+    .wall { grid-template-columns: minmax(0, 1fr); padding-right: 8px; }
+    .movers { grid-template-columns: minmax(0, 1fr); }
+    .mover:nth-child(even) { border-left: 0; }
+    .mover + .mover { border-top: 2px solid var(--ink); }
+    .phone { width: 46%; max-width: 190px; }
+    .soon-chip { font-size: 10.5px; padding: 5px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="trail" aria-hidden="true"><div class="trail-fill"></div><div class="trail-dot"></div></div>
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand"><span class="blaze" aria-hidden="true"></span><b>cairn</b></span>
+    <span class="soon-chip"><i aria-hidden="true"></i>Coming soon</span>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <svg class="contours" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <path d="M-40 560 C 120 470, 260 520, 380 450 S 620 330, 760 380 S 1040 520, 1260 430"/>
+      <path d="M-40 610 C 140 520, 280 575, 400 505 S 640 390, 780 440 S 1050 580, 1260 490"/>
+      <path d="M-40 660 C 160 575, 300 630, 420 560 S 660 450, 800 500 S 1060 640, 1260 550"/>
+      <path d="M-40 510 C 100 420, 240 465, 360 395 S 600 270, 740 320 S 1030 460, 1260 370"/>
+      <path d="M-40 460 C 80 370, 220 410, 340 340 S 580 210, 720 260 S 1020 400, 1260 310"/>
+      <path d="M300 120 C 360 60, 480 60, 520 120 S 470 230, 390 220 S 250 180, 300 120 Z"/>
+      <path d="M335 128 C 375 92, 455 92, 482 130 S 450 196, 395 190 S 305 165, 335 128 Z"/>
+    </svg>
+    <div class="wrap">
+      <div class="hero-copy">
+        <div class="label"><span class="blaze" aria-hidden="true"></span>Leave it. Find it.</div>
+        <h1>The best messages aren’t sent. <span class="hl">They’re found.</span></h1>
+        <p class="lead">Friends hide notes on real streets, trails and rivers. You can only read them by going there.</p>
+        <p class="for">Made for <span class="rot-box"><span class="rot" id="rot">best friends</span></span></p>
+        <div class="platforms" aria-label="Coming to">
+          <span class="platform"><small>Soon on</small> iPhone</span>
+          <span class="platform"><small>Soon on</small> Android</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="map-card">
+          <svg viewBox="0 0 560 440" role="img" aria-labelledby="mapTitle">
+            <title id="mapTitle">A runner's route crosses a river bridge toward a hidden note.</title>
+            <rect width="560" height="440" fill="var(--map-land)"/>
+            <path d="M0 300 L170 268 L236 440 L0 440 Z" fill="var(--map-park)"/>
+            <path d="M380 0 L560 0 L560 92 L452 116 Z" fill="var(--map-park)"/>
+            <path d="M-20 262 C 100 232, 180 288, 300 248 S 470 196, 590 214" fill="none" stroke="var(--map-water)" stroke-width="36"/>
+            <g fill="none" stroke-linecap="square">
+              <path d="M0 136 L560 136" stroke="var(--map-casing)" stroke-width="18"/>
+              <path d="M424 0 L424 440" stroke="var(--map-casing)" stroke-width="18"/>
+              <path d="M300 440 L520 300" stroke="var(--map-casing)" stroke-width="14"/>
+              <path d="M200 298 L250 248" stroke="var(--map-casing)" stroke-width="26"/>
+              <path d="M0 136 L560 136" stroke="var(--map-street)" stroke-width="12"/>
+              <path d="M424 0 L424 440" stroke="var(--map-street)" stroke-width="12"/>
+              <path d="M300 440 L520 300" stroke="var(--map-street)" stroke-width="8"/>
+              <path d="M200 298 L250 248" stroke="var(--map-street)" stroke-width="20"/>
+              <path d="M40 420 C 70 380, 90 360, 120 340 S 170 312, 200 298" stroke="var(--map-trail)" stroke-width="2.5" stroke-dasharray="5 6"/>
+            </g>
+            <circle cx="132" cy="70" r="54" fill="var(--route)" fill-opacity="0.10" stroke="var(--route)" stroke-width="2" stroke-dasharray="7 6"/>
+            <path id="route" class="draw" pathLength="1" d="M40 420 C 70 380, 90 360, 120 340 S 170 312, 200 298 L 250 248 C 262 234, 268 218, 270 196" fill="none" stroke="var(--route)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle class="note-ring" cx="270" cy="178" r="30" fill="none" stroke="var(--signal)" stroke-width="4"/>
+            <circle cx="270" cy="178" r="30" fill="var(--signal)" fill-opacity="0.45" stroke="var(--ink)" stroke-width="2"/>
+            <rect x="268" y="170" width="12" height="22" fill="var(--route)"/>
+            <rect x="264" y="166" width="12" height="22" fill="var(--ink)"/>
+            <circle cx="40" cy="420" r="6" fill="var(--paper)" stroke="var(--ink)" stroke-width="3"/>
+            <g class="runner-anim">
+              <circle r="8" fill="var(--paper)" stroke="var(--route)" stroke-width="4" opacity="0">
+                <set attributeName="opacity" to="1" begin="1.8s" fill="freeze"/>
+                <animateMotion dur="7s" begin="1.8s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear">
+                  <mpath href="#route"/>
+                </animateMotion>
+              </circle>
+            </g>
+          </svg>
+        </div>
+        <div class="phone" aria-label="The cairn app showing a note found">
+          <div class="screen">
+            <div class="bar"><span>7:42</span><span>RUN</span></div>
+            <span class="tag">1ST TO FIND IT</span>
+            <div class="found">Note<br>found</div>
+            <p class="msg">“Loose dog behind the blue fence. Go left at the bridge.”</p>
+            <div class="who"><span class="av">SR</span><span>Sam<em>left this yesterday</em></span></div>
+            <div class="btns"><span>Kudos</span><span>Reply</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="strip dark" aria-label="Sports: running, trail running, hiking, walking, road cycling, mountain biking, kayaking, canoeing">
+    <div class="strip-row" aria-hidden="true">
+      <span>Running</span><span>Trail running</span><span>Hiking</span><span>Walking</span><span>Road cycling</span><span>Mountain biking</span><span>Kayaking</span><span>Canoeing</span>
+      <span>Running</span><span>Trail running</span><span>Hiking</span><span>Walking</span><span>Road cycling</span><span>Mountain biking</span>
+    </div>
+  </div>
+
+  <section class="block" aria-labelledby="wall">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="label"><span class="blaze" aria-hidden="true"></span>Out there right now</div>
+        <h2 id="wall">Somebody was here</h2>
+        <p>Every note is locked to one spot. Keep scrolling to walk past them.</p>
+      </div>
+      <div class="wall">
+        <article class="note-card" style="--r: -1.5deg">
+          <div class="head"><span class="pin">The old bench</span><span>Hint</span></div>
+          <p class="msg">Happy birthday, legend. Breakfast is on me. Same bench, 8 am.</p>
+          <div class="from"><span class="av">PM</span>Priya</div>
+          <span class="stamp">Found</span>
+          <div class="lock" aria-hidden="true"><span>Locked · go there</span></div>
+        </article>
+        <article class="note-card y" style="--r: 1.2deg">
+          <div class="head"><span class="pin">Top of the hill</span><span>Surprise</span></div>
+          <p class="msg">If you’re reading this, you made it all the way up. Proud of you.</p>
+          <div class="from"><span class="av">NV</span>Nina</div>
+          <span class="stamp">Found</span>
+          <div class="lock" aria-hidden="true"><span>Locked · go there</span></div>
+        </article>
+        <article class="note-card" style="--r: -0.6deg">
+          <div class="head"><span class="pin">The lighthouse</span><span>Hint</span></div>
+          <p class="msg">Last one to the lighthouse buys smoothies. Clock’s running.</p>
+          <div class="from"><span class="av">JK</span>Jordan</div>
+          <span class="stamp">Found</span>
+          <div class="lock" aria-hidden="true"><span>Locked · go there</span></div>
+        </article>
+        <article class="note-card" style="--r: 0.9deg">
+          <div class="head"><span class="pin">Pier, west end</span><span>Surprise</span></div>
+          <p class="msg">Best sunset in the city. Sit down for five minutes. Trust me.</p>
+          <div class="from"><span class="av">AO</span>Alex</div>
+          <span class="stamp">Found</span>
+          <div class="lock" aria-hidden="true"><span>Locked · go there</span></div>
+        </article>
+        <article class="note-card" style="--r: -1.1deg">
+          <div class="head"><span class="pin">Riverside Bridge</span><span>Hint</span></div>
+          <p class="msg">Loose dog behind the blue fence. Go left at the bridge.</p>
+          <div class="from"><span class="av">SR</span>Sam</div>
+          <span class="stamp">Found</span>
+          <div class="lock" aria-hidden="true"><span>Locked · go there</span></div>
+        </article>
+        <article class="note-card y" style="--r: 1.4deg">
+          <div class="head"><span class="pin">The big oak</span><span>Surprise</span></div>
+          <p class="msg">You touched grass. Officially. Now text me back.</p>
+          <div class="from"><span class="av">MI</span>Mia</div>
+          <span class="stamp">Found</span>
+          <div class="lock" aria-hidden="true"><span>Locked · go there</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="how">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="label"><span class="blaze" aria-hidden="true"></span>How it works</div>
+        <h2 id="how">Three steps. Zero couch.</h2>
+      </div>
+      <ol class="steps">
+        <li data-reveal style="--d: 0ms">
+          <span class="n"><em>Drop</em> it</span>
+          <p>Pick any spot on the map. Write something only your friends will get.</p>
+        </li>
+        <li data-reveal style="--d: 140ms">
+          <span class="n"><em>Go</em> out</span>
+          <p>Run, walk, ride or paddle. Your phone stays in your pocket.</p>
+        </li>
+        <li data-reveal style="--d: 280ms">
+          <span class="n"><em>Find</em> it</span>
+          <p>Get close and it buzzes open. Not one step sooner.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="modes">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="label"><span class="blaze" aria-hidden="true"></span>Two ways to hide it</div>
+        <h2 id="modes">Hot or cold? You choose.</h2>
+      </div>
+      <div class="modes">
+        <article class="mode hint" data-reveal="left">
+          <svg viewBox="0 0 520 220" role="img" aria-label="A map with a dashed hint circle and warmth bars rising">
+            <rect width="520" height="220" fill="var(--map-land)"/>
+            <path d="M0 150 C 120 120, 260 190, 520 140" fill="none" stroke="var(--map-water)" stroke-width="26"/>
+            <path d="M0 70 L520 70" stroke="var(--map-street)" stroke-width="12"/>
+            <circle cx="300" cy="110" r="78" fill="var(--route)" fill-opacity="0.10" stroke="var(--route)" stroke-width="2.5" stroke-dasharray="8 7"/>
+            <path d="M40 200 C 120 170, 190 150, 262 122" fill="none" stroke="var(--route)" stroke-width="6" stroke-linecap="round"/>
+            <circle cx="262" cy="122" r="7" fill="var(--paper)" stroke="var(--route)" stroke-width="4"/>
+            <g class="bars" transform="translate(410 150)">
+              <rect x="0" y="40" width="14" height="12" fill="var(--ink)"/>
+              <rect x="20" y="28" width="14" height="24" fill="var(--ink)"/>
+              <rect x="40" y="16" width="14" height="36" fill="var(--ink)"/>
+              <rect x="60" y="4" width="14" height="48" fill="var(--ink)"/>
+              <rect x="80" y="-8" width="14" height="60" fill="var(--signal)" stroke="var(--ink)" stroke-width="2"/>
+            </g>
+            <text x="410" y="128" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="var(--ink)">WARMER</text>
+          </svg>
+          <div class="txt">
+            <span class="kind">Hint</span>
+            <h3>Follow the buzz</h3>
+            <p>Friends see a circle on the map. The closer they get, the warmer it buzzes.</p>
+          </div>
+        </article>
+        <article class="mode" data-reveal style="--d: 160ms">
+          <svg viewBox="0 0 520 220" role="img" aria-label="A plain map with a route and nothing marked on it">
+            <rect width="520" height="220" fill="var(--map-land)"/>
+            <path d="M0 150 C 120 120, 260 190, 520 140" fill="none" stroke="var(--map-water)" stroke-width="26"/>
+            <path d="M0 70 L520 70" stroke="var(--map-street)" stroke-width="12"/>
+            <path d="M40 200 C 140 160, 240 120, 340 100 S 460 80, 500 60" fill="none" stroke="var(--route)" stroke-width="6" stroke-linecap="round"/>
+            <circle cx="340" cy="100" r="7" fill="var(--paper)" stroke="var(--route)" stroke-width="4"/>
+            <text x="40" y="38" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="var(--muted)">NOTHING TO SEE HERE. YET.</text>
+          </svg>
+          <div class="txt">
+            <span class="kind">Surprise</span>
+            <h3>Total plot twist</h3>
+            <p>No clues at all. They stumble on it when they least expect it.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="movers">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="label"><span class="blaze" aria-hidden="true"></span>Who it’s for</div>
+        <h2 id="movers">Made for every kind of mover</h2>
+      </div>
+      <div class="movers" data-reveal>
+        <div class="mover"><span class="who">Best friends</span><h3>Hide your inside jokes all over town.</h3></div>
+        <div class="mover"><span class="who">Couples</span><h3>Leave a love note where you first met.</h3></div>
+        <div class="mover"><span class="who">Runners &amp; riders</span><h3>Same old route. Brand new surprise.</h3></div>
+        <div class="mover"><span class="who">Crews &amp; teams</span><h3>Leave a trail and see who finishes it.</h3></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ambush" aria-labelledby="ambush">
+    <div class="wrap">
+      <div data-reveal="left">
+        <div class="label"><span class="blaze" aria-hidden="true"></span>Try this first</div>
+        <h2 id="ambush">The Birthday Ambush</h2>
+      </div>
+      <p data-reveal style="--d: 200ms">Hide a birthday message on their morning route. They’ll never see it coming.</p>
+    </div>
+  </section>
+
+  <div class="slogans" aria-label="Phone in pocket. Shoes on. Go outside, someone left you something.">
+    <div class="row a" aria-hidden="true"><span>Phone in pocket.</span><span class="o">Shoes on.</span><span>Phone in pocket.</span><span class="o">Shoes on.</span></div>
+    <div class="row b" aria-hidden="true"><span class="o">Go outside.</span><span>Someone left you something.</span><span class="o">Go outside.</span></div>
+  </div>
+
+  <section class="closing" aria-labelledby="soon">
+    <div class="wrap">
+      <h2 id="soon" data-reveal>Someone’s about to leave you a note.</h2>
+      <p class="sub" data-reveal style="--d: 120ms">cairn is coming soon to iPhone and Android.</p>
+      <div class="platforms" data-reveal style="--d: 220ms">
+        <span class="platform"><small>Soon on</small> iPhone</span>
+        <span class="platform"><small>Soon on</small> Android</span>
+      </div>
+      <div class="facts" data-reveal style="--d: 320ms">
+        <span>Free to play with friends</span>
+        <span>No ads</span>
+        <span>Your location is never sold</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="brand"><span class="blaze" aria-hidden="true"></span><b>cairn</b></span>
+    <span>Leave it. Find it.</span>
+    <span>Started November 8, 2026 · © 2026 cairn</span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var reduce = false;
+    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+    // Route bar and sliding strips follow the scroll position.
+    var ticking = false;
+    function update() {
+      ticking = false;
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      var p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      root.style.setProperty('--progress', p.toFixed(4));
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+
+    if (reduce) {
+      document.querySelectorAll('svg').forEach(function (s) { if (s.pauseAnimations) s.pauseAnimations(); });
+      return;
+    }
+
+    // "Made for ..." cycles through the people cairn is for.
+    var words = ['best friends', 'runners', 'roommates', 'couples', 'run clubs', 'bike crews', 'hikers', 'paddlers', 'birthday surprises'];
+    var rot = document.getElementById('rot');
+    var i = 0;
+    if (rot) {
+      setInterval(function () {
+        rot.classList.add('out');
+        setTimeout(function () {
+          i = (i + 1) % words.length;
+          rot.textContent = words[i];
+          rot.classList.remove('out');
+          rot.classList.add('in');
+          void rot.offsetWidth;
+          rot.classList.remove('in');
+        }, 350);
+      }, 2200);
+    }
+
+    if (!('IntersectionObserver' in window)) return;
+    var fold = window.innerHeight * 0.9;
+
+    // Sections arrive as you reach them. Anything already on screen stays put.
+    var items = Array.prototype.slice.call(document.querySelectorAll('[data-reveal]'));
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.remove('is-waiting');
+          entry.target.classList.add('is-shown');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+    items.forEach(function (el) {
+      if (el.getBoundingClientRect().top > fold) { el.classList.add('is-waiting'); io.observe(el); }
+      else { el.classList.add('is-shown'); }
+    });
+
+    // Notes unlock when you "walk past" them: when they reach the middle of the screen.
+    var notes = Array.prototype.slice.call(document.querySelectorAll('.note-card'));
+    var unlock = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var el = entry.target;
+          setTimeout(function () { el.classList.remove('is-locked'); }, Number(el.dataset.delay || 0));
+          unlock.unobserve(el);
+        }
+      });
+    }, { rootMargin: '0px 0px -35% 0px', threshold: 0.6 });
+    notes.forEach(function (el, n) {
+      if (el.getBoundingClientRect().top > window.innerHeight * 0.6) {
+        el.classList.add('is-locked');
+        el.dataset.delay = String((n % 3) * 160);
+        unlock.observe(el);
+      }
+    });
+
+    window.addEventListener('beforeprint', function () {
+      items.forEach(function (el) { el.classList.remove('is-waiting'); el.classList.add('is-shown'); });
+      notes.forEach(function (el) { el.classList.remove('is-locked'); });
+    });
+  })();
+</script>
+</body>
+</html>
