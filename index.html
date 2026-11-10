@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>cairn · Leave it. Find it.</title>
-<meta name="description" content="The best messages aren't sent. They're found. Friends hide notes on real streets, trails and rivers, and you can only read them by going there. Coming soon to iPhone and Android.">
+<title>Jekalo · Leave it. Find it.</title>
+<meta name="description" content="The best messages aren't sent. They're found. Friends hide notes on real streets, trails and rivers, and you can only read them by going there. Coming soon to iPhone and Android. Join the waitlist.">
 <meta name="theme-color" content="#FFD400">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="cairn">
-<meta property="og:title" content="cairn · The best messages aren't sent. They're found.">
+<meta property="og:site_name" content="Jekalo">
+<meta property="og:title" content="Jekalo · The best messages aren't sent. They're found.">
 <meta property="og:description" content="Friends hide notes on real streets, trails and rivers. You can only read them by going there. Coming soon to iPhone and Android.">
-<link rel="canonical" href="https://cairnmover.github.io/">
-<meta property="og:url" content="https://cairnmover.github.io/">
-<meta property="og:image" content="https://cairnmover.github.io/og-image.png">
-<meta name="twitter:image" content="https://cairnmover.github.io/og-image.png">
+<link rel="canonical" href="https://jekaloapp.github.io/">
+<meta property="og:url" content="https://jekaloapp.github.io/">
+<meta property="og:image" content="https://jekaloapp.github.io/og-image.png">
+<meta name="twitter:image" content="https://jekaloapp.github.io/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -238,9 +238,76 @@
   .closing .facts span { display: inline-flex; align-items: center; gap: 10px; }
   .closing .facts span::before { content: ""; width: 8px; height: 8px; background: var(--route); }
 
+
+  /* Calls to action and the waitlist */
+  a.soon-chip { color: inherit; text-decoration: none; }
+  a.soon-chip:hover { background: var(--signal); color: var(--on-signal); }
+  .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; }
+  .cta, .wl button, .wl-done button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 14px 24px;
+    background: var(--signal); color: var(--on-signal); border: 2px solid var(--ink); border-radius: 0; box-shadow: 5px 5px 0 var(--ink);
+    font-family: var(--body); font-weight: 800; font-size: 18px; line-height: 1.1; text-decoration: none; cursor: pointer;
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  }
+  .cta:hover, .wl button:hover, .wl-done button:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+  .cta:active, .wl button:active, .wl-done button:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+  .wl button:disabled { cursor: progress; opacity: 0.7; transform: none; box-shadow: 5px 5px 0 var(--ink); }
+  .cta-note { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+  .wl { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 20px; padding: clamp(20px, 3vw, 30px); border: 2px solid var(--ink); background: var(--paper); box-shadow: 8px 8px 0 var(--route); }
+  .wl[hidden] { display: none; }
+  .wl-head { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-weight: 600; font-size: 12.5px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .wl-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
+  .wl-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .wl-field > span, .wl-phone legend { font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .wl em { font-style: normal; color: var(--muted); letter-spacing: 0.04em; text-transform: none; font-weight: 500; }
+  .wl-field input {
+    width: 100%; min-height: 54px; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 18px; -webkit-appearance: none; appearance: none;
+  }
+  .wl-field input::placeholder { color: var(--muted); opacity: 0.7; }
+  .wl-field input:focus { outline: 3px solid var(--route); outline-offset: 2px; }
+  .wl-field input[aria-invalid="true"] { border-style: dashed; border-width: 3px; }
+  .wl-phone { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .wl-phone legend { float: left; width: 100%; padding: 0; margin-bottom: 8px; }
+  .wl-phone label { position: relative; }
+  .wl-phone input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .wl-phone span { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 18px; border: 2px solid var(--ink); font-weight: 700; font-size: 16px; }
+  .wl-phone input:checked + span { background: var(--ink); color: var(--paper); box-shadow: 3px 3px 0 var(--signal); }
+  .wl-phone input:focus-visible + span { outline: 3px solid var(--route); outline-offset: 3px; }
+  .wl-trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .wl-go { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+  .wl-msg { font-weight: 700; font-size: 16px; }
+  .wl-msg:empty { display: none; }
+  .wl-msg.err { background: var(--ink); color: var(--paper); padding: 6px 10px; }
+  .wl-fine { font-size: 14.5px; color: var(--muted); max-width: 60ch; }
+  .wl-fine a { color: inherit; text-underline-offset: 3px; }
+
+  .wl-done { width: 100%; max-width: 560px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: clamp(22px, 3vw, 32px); background: var(--signal); color: var(--on-signal); border: 2px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); outline: none; }
+  .wl-done[hidden] { display: none; }
+  .wl-stamp { font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; background: var(--on-signal); color: var(--signal); padding: 4px 9px; }
+  .wl-done p { font-weight: 500; font-size: 18px; max-width: 40ch; }
+  .wl-done p.wl-done-title { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 4.6vw, 52px); line-height: 0.95; text-transform: uppercase; }
+  .wl-done button { background: var(--on-signal); color: var(--signal); border-color: var(--on-signal); box-shadow: 5px 5px 0 var(--paper); }
+  .wl-done button:hover { box-shadow: 7px 7px 0 var(--paper); }
+  .wl-done button:active { box-shadow: 2px 2px 0 var(--paper); }
+
+  .invite { border-bottom: 2px solid var(--ink); background: var(--wash); }
+  .invite[hidden] { display: none; }
+  .invite .wrap { padding-block: 22px; }
+  .invite-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-width: 640px; padding: 20px 22px 22px; background: var(--signal); color: var(--on-signal); border: 2px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); }
+  .invite-title { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 4vw, 38px); line-height: 1; text-transform: uppercase; }
+  .invite-card p { font-weight: 500; max-width: 46ch; }
+  .invite-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+  .invite-card .cta { background: var(--on-signal); color: var(--signal); border-color: var(--on-signal); box-shadow: 5px 5px 0 var(--paper); }
+  .invite-code { font-family: var(--mono); font-weight: 600; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .invite-code b { font-size: 18px; letter-spacing: 0.16em; margin-left: 6px; }
+
   footer { border-top: 2px solid var(--ink); }
   footer .wrap { padding-block: 24px 32px; display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   footer .brand b { font-size: 18px; color: var(--ink); }
+  /* The monospace font places Yoruba tone marks badly, so the phrase uses the body font. */
+  footer .yo { font-family: var(--body); font-weight: 500; font-size: 13.5px; }
   footer .brand .blaze { width: 9px; height: 16px; }
 
   /* ---------- Motion ---------- */
@@ -291,6 +358,8 @@
     .mover + .mover { border-top: 2px solid var(--ink); }
     .phone { width: 46%; max-width: 190px; }
     .soon-chip { font-size: 10.5px; padding: 5px 8px; }
+    .wl-row { grid-template-columns: minmax(0, 1fr); }
+    .wl button, .cta { width: 100%; }
   }
 </style>
 </head>
@@ -299,10 +368,25 @@
 
 <header class="top">
   <div class="wrap">
-    <span class="brand"><span class="blaze" aria-hidden="true"></span><b>cairn</b></span>
-    <span class="soon-chip"><i aria-hidden="true"></i>Coming soon</span>
+    <span class="brand"><span class="blaze" aria-hidden="true"></span><b>jekalo</b></span>
+    <a class="soon-chip" href="#waitlist"><i aria-hidden="true"></i>Join the waitlist</a>
   </div>
 </header>
+
+<!-- Shown for invite links: ?club=CODE (a club) or ?invite=CODE (a friend). -->
+<section class="invite" id="invite" aria-labelledby="invite-title" hidden>
+  <div class="wrap">
+    <div class="invite-card">
+      <span class="wl-stamp" id="invite-kind">Club invite</span>
+      <h2 class="invite-title" id="invite-title">You’re invited to a club on Jekalo.</h2>
+      <p id="invite-text">Have the app? Open the invite in Jekalo. Not yet? Join the waitlist below and keep this link.</p>
+      <div class="invite-actions">
+        <a class="cta" id="invite-open" href="#">Open in Jekalo <span aria-hidden="true">→</span></a>
+        <span class="invite-code">Code <b id="invite-code"></b></span>
+      </div>
+    </div>
+  </div>
+</section>
 
 <main>
   <section class="hero">
@@ -321,9 +405,9 @@
         <h1>The best messages aren’t sent. <span class="hl">They’re found.</span></h1>
         <p class="lead">Friends hide notes on real streets, trails and rivers. You can only read them by going there.</p>
         <p class="for">Made for <span class="rot-box"><span class="rot" id="rot">best friends</span></span></p>
-        <div class="platforms" aria-label="Coming to">
-          <span class="platform"><small>Soon on</small> iPhone</span>
-          <span class="platform"><small>Soon on</small> Android</span>
+        <div class="cta-row">
+          <a class="cta" href="#waitlist">Join the waitlist <span aria-hidden="true">→</span></a>
+          <span class="cta-note">Soon on iPhone and Android</span>
         </div>
       </div>
 
@@ -363,7 +447,7 @@
             </g>
           </svg>
         </div>
-        <div class="phone" aria-label="The cairn app showing a note found">
+        <div class="phone" aria-label="The Jekalo app showing a note found">
           <div class="screen">
             <div class="bar"><span>7:42</span><span>RUN</span></div>
             <span class="tag">1ST TO FIND IT</span>
@@ -540,13 +624,43 @@
     <div class="row b" aria-hidden="true"><span class="o">Go outside.</span><span>Someone left you something.</span><span class="o">Go outside.</span></div>
   </div>
 
-  <section class="closing" aria-labelledby="soon">
+  <section class="closing" id="waitlist" aria-labelledby="soon">
     <div class="wrap">
       <h2 id="soon" data-reveal>Someone’s about to leave you a note.</h2>
-      <p class="sub" data-reveal style="--d: 120ms">cairn is coming soon to iPhone and Android.</p>
-      <div class="platforms" data-reveal style="--d: 220ms">
-        <span class="platform"><small>Soon on</small> iPhone</span>
-        <span class="platform"><small>Soon on</small> Android</span>
+      <p class="sub" data-reveal style="--d: 120ms">Jekalo is coming soon to iPhone and Android. Join the waitlist and we’ll email you the day it’s out.</p>
+
+      <form class="wl" id="wl" data-reveal style="--d: 220ms" novalidate>
+        <div class="wl-head"><span class="blaze" aria-hidden="true"></span>Waitlist</div>
+        <div class="wl-row">
+          <label class="wl-field">
+            <span>Email</span>
+            <input type="email" name="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="you@example.com" required>
+          </label>
+          <label class="wl-field">
+            <span>City <em>optional</em></span>
+            <input type="text" name="city" autocomplete="address-level2" maxlength="80" placeholder="Seattle">
+          </label>
+        </div>
+        <fieldset class="wl-phone">
+          <legend>Your phone <em>optional</em></legend>
+          <label><input type="radio" name="phone" value="iphone"><span>iPhone</span></label>
+          <label><input type="radio" name="phone" value="android"><span>Android</span></label>
+          <label><input type="radio" name="phone" value="other"><span>Other</span></label>
+        </fieldset>
+        <label class="wl-trap" aria-hidden="true">Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        <div class="wl-go">
+          <button type="submit">Join the waitlist</button>
+          <p class="wl-msg" role="status" aria-live="polite"></p>
+        </div>
+        <p class="wl-fine">We only use your email to tell you when Jekalo is out. No spam, never sold. To be taken off the list, email <a href="mailto:cairnmover@gmail.com">cairnmover@gmail.com</a>.</p>
+      </form>
+
+      <div class="wl-done" id="wl-done" tabindex="-1" hidden>
+        <span class="wl-stamp">Found</span>
+        <p class="wl-done-title">You’re on the list.</p>
+        <p>We’ll email you the day Jekalo is out. Know someone who’d love a note? Send them this page.</p>
+        <button type="button" id="wl-share">Share Jekalo</button>
+        <p class="wl-msg" id="wl-share-msg" role="status" aria-live="polite"></p>
       </div>
       <div class="facts" data-reveal style="--d: 320ms">
         <span>Free to play with friends</span>
@@ -559,11 +673,110 @@
 
 <footer>
   <div class="wrap">
-    <span class="brand"><span class="blaze" aria-hidden="true"></span><b>cairn</b></span>
+    <span class="brand"><span class="blaze" aria-hidden="true"></span><b>jekalo</b></span>
     <span>Leave it. Find it.</span>
-    <span>Started November 8, 2026 · © 2026 cairn</span>
+    <span>Jekalo: from the Yoruba <span class="yo" lang="yo">“jẹ́ ká lọ”</span>, let’s go.</span>
+    <span>Started November 8, 2026 · © 2026 Jekalo</span>
   </div>
 </footer>
+
+<script>
+  // Invite links from the app: https://jekaloapp.github.io/?club=CODE or ?invite=CODE.
+  // Chat apps don't make cairn:// links tappable, so the app shares this page and the page opens the app.
+  (function () {
+    var box = document.getElementById('invite');
+    if (!box) return;
+    var club = /[?&]club=([A-Za-z0-9]{6,10})(?:&|$)/.exec(location.search);
+    var friend = /[?&]invite=([A-Za-z0-9]{6,10})(?:&|$)/.exec(location.search);
+    var code = (club || friend || [])[1];
+    if (!code) return;
+    code = code.toUpperCase();
+    document.getElementById('invite-code').textContent = code;
+    document.getElementById('invite-open').setAttribute('href', (club ? 'cairn://join/' : 'cairn://invite/') + code);
+    if (!club) {
+      document.getElementById('invite-kind').textContent = 'Friend invite';
+      document.getElementById('invite-title').textContent = 'A friend invited you to Jekalo.';
+      document.getElementById('invite-text').textContent = 'Have the app? Open the invite in Jekalo and you’ll find each other’s notes. Not yet? Join the waitlist below and keep this link.';
+    }
+    box.hidden = false;
+  })();
+</script>
+
+<script>
+  // Waitlist: saves straight into the Jekalo database. Visitors can add themselves but can't read the list.
+  (function () {
+    var API = 'https://pwarwysygfyavsrkzngt.supabase.co/rest/v1/waitlist';
+    var KEY = 'sb_publishable_O3s6jjF5O_Nq5MA7esf7OQ_QPfsE79O';
+    var form = document.getElementById('wl');
+    var done = document.getElementById('wl-done');
+    if (!form || !done) return;
+    var btn = form.querySelector('button[type="submit"]');
+    var msg = form.querySelector('.wl-msg');
+    var email = form.elements.email;
+
+    // Where people came from, e.g. jekaloapp.github.io/?src=poster
+    var source = 'site';
+    try {
+      var m = /[?&]src=([A-Za-z0-9_-]{1,40})/.exec(location.search);
+      if (m) source = m[1].toLowerCase();
+    } catch (e) {}
+
+    function say(text, isError) {
+      msg.textContent = text;
+      msg.classList.toggle('err', !!isError);
+    }
+    function finish() {
+      form.hidden = true;
+      done.hidden = false;
+      try { done.focus({ preventScroll: true }); } catch (e) { done.focus(); }
+      done.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    email.addEventListener('input', function () {
+      email.removeAttribute('aria-invalid');
+      if (msg.classList.contains('err')) say('');
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (form.elements.website.value) { finish(); return; }
+      var address = email.value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) {
+        email.setAttribute('aria-invalid', 'true');
+        say('That email doesn’t look right. Check it and try again.', true);
+        email.focus();
+        return;
+      }
+      var phone = form.querySelector('input[name="phone"]:checked');
+      var city = form.elements.city.value.trim();
+      btn.disabled = true;
+      btn.textContent = 'Adding you…';
+      say('');
+      fetch(API, {
+        method: 'POST',
+        headers: { apikey: KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ email: address, city: city || null, phone: phone ? phone.value : null, source: source })
+      }).then(function (res) {
+        // 409 means this email is already on the list, which is fine.
+        if (res.ok || res.status === 409) { finish(); return; }
+        throw new Error('status ' + res.status);
+      }).catch(function () {
+        btn.disabled = false;
+        btn.textContent = 'Join the waitlist';
+        say('Couldn’t add you just now. Check your connection and try again.', true);
+      });
+    });
+
+    var share = document.getElementById('wl-share');
+    var shareMsg = document.getElementById('wl-share-msg');
+    share.addEventListener('click', function () {
+      var data = { title: 'Jekalo', text: 'Friends hide notes on real streets, trails and rivers. You can only read them by going there.', url: 'https://jekaloapp.github.io/' };
+      if (navigator.share) { navigator.share(data).catch(function () {}); return; }
+      var show = function (t) { shareMsg.textContent = t; };
+      if (navigator.clipboard) navigator.clipboard.writeText(data.url).then(function () { show('Link copied. Paste it anywhere.'); }, function () { show(data.url); });
+      else show(data.url);
+    });
+  })();
+</script>
 
 <script>
   (function () {
@@ -590,7 +803,7 @@
       return;
     }
 
-    // "Made for ..." cycles through the people cairn is for.
+    // "Made for ..." cycles through the people Jekalo is for.
     var words = ['best friends', 'runners', 'roommates', 'couples', 'run clubs', 'bike crews', 'hikers', 'paddlers', 'birthday surprises'];
     var rot = document.getElementById('rot');
     var i = 0;
